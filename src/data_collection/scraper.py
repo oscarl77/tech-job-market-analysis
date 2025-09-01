@@ -1,5 +1,7 @@
 import time
 import random
+import traceback
+
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 
@@ -26,6 +28,7 @@ class JobScraper:
             page = browser.new_page()
             page_urls = self._generate_page_urls(job_title, pages_to_scrape)
             job_urls = self._get_job_urls(page, page_urls)
+            all_job_details = self._scrape_job_details(page, job_urls)
 
     def _generate_page_urls(self, job_title, pages_to_scrape):
         """
@@ -62,10 +65,10 @@ class JobScraper:
             page.wait_for_selector(ARTICLE_CLASS, timeout=10000)
             html_content = page.content()
             soup = BeautifulSoup(html_content, 'lxml')
-            links = soup.select(f'{ARTICLE_CLASS} a[href]')
+            links = soup.select('a[data-testid="job-item-title"]')
             for link in links:
                 job_url = link.get('href')
-                job_urls.append(job_url)
+                job_urls.append(JOB_POST_BASE_URL + job_url)
             time.sleep(time_delay)
         return job_urls
 
@@ -74,26 +77,46 @@ class JobScraper:
         Visit each individual job post url and extract the detailed content.
         :param page: The active Playwright object.
         :param job_urls: List of individual job urls.
-        :return:
+        :return: List of job details for each individual job post.
         """
         time_delay = random.uniform(4,8)
         all_job_details = []
         for url in job_urls:
             try:
                 page.goto(url, timeout=60000)
-                page.wait_for_selector(ARTICLE_CLASS, timeout=10000)
+                page.wait_for_selector('.job-ad-wrapper', timeout=10000)
                 html_content = page.content()
                 soup = BeautifulSoup(html_content, 'lxml')
-                # TODO
-                time.sleep(time_delay)
+                job_title = self._extract_job_content(soup, '.job-ad-display-1sxnrxf')
+                company_name = self._extract_job_content(soup, '.at-listing__list-icons_company-name.job-ad-display-h9xo01')
+                location_raw = self._extract_job_content(soup, '.at-listing__list-icons_location.map-trigger.job-ad-display-h9xo01')
+                employment_type = self._extract_job_content(soup, '.at-listing__list-icons_work-type.job-ad-display-h9xo01')
+                date_posted_raw = self._extract_job_content(soup, '.at-listing__list-icons_date.job-ad-display-h9xo01')
+                salary_raw = self._extract_job_content(soup, '.at-listing__list-icons_salary.job-ad-display-7usr2j')
+                full_description = self._extract_job_content(soup, '.job-ad-display-nnx1yw')
+                job_data_raw = {
+                    'job_title': job_title,
+                    'company_name': company_name,
+                    'location': location_raw,
+                    'employment_type': employment_type,
+                    'date_posted_raw': date_posted_raw,
+                    'salary_raw': salary_raw,
+                    'full_description': full_description
+                }
+                all_job_details.append(job_data_raw)
+                print(f"Successfully scraped: {job_title} at {company_name}")
             except Exception as e:
-                # TODO
-                pass
+                print(f"Could not process page {url}")
+                traceback.print_exc()
+            time.sleep(time_delay)
+        return all_job_details
 
+    @staticmethod
+    def _extract_job_content(soup, content_selector):
+        element = soup.select_one(content_selector)
+        content = element.get_text(strip=True) if element else 'N/A'
+        return content
 
 if __name__ == '__main__':
     scraper = JobScraper(BASE_URL, URL_TAIL)
     scraper.run(job_title=JOB_TITLE, pages_to_scrape=PAGES_TO_SCRAPE)
-
-
-
