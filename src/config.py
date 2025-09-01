@@ -1,5 +1,6 @@
 BASE_URL = "https://www.cwjobs.co.uk/jobs/"
+JOB_POST_BASE_URL = "https://www.cwjobs.co.uk"
 URL_TAIL = "?page={page_number}&rsearch=1&searchOrigin=Homepage_top-search"
-ARTICLE_CLASS = "article.res-1c3sls7"
+ARTICLE_CLASS = "a.res-30nsen"
 JOB_TITLE = "Data Engineer"
-PAGES_TO_SCRAPE = 4
+PAGES_TO_SCRAPE = 1
