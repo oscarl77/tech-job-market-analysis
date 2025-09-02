@@ -15,17 +15,25 @@ RAW_DATA_TABLE_NAME = 'jobs_raw'
 PROCESSED_DATA_TABLE_NAME = 'jobs_processed'
 
 REGION_TO_CITIES_MAP = {
-        'North West': ['North West', 'Manchester', 'Rochdale', 'Blackburn', 'Warrington', 'Liverpool', 'Wigan', 'Stockport', 'Ormskirk', 'Salford', 'Blackburn', 'Cheshire', 'Merseyside', 'Preston'],
-        'Yorkshire': ['Yorkshire', 'Lancashire', 'Leeds', 'Bradford', 'Huddersfield', 'Newcastle', 'Sheffield', 'Beverly', 'Doncaster', 'Hartlepool', 'Grimsby', 'Ripon', 'Lincolnshire'],
-        'South East': ['South East', 'Oxford', 'Oxfordshire', 'Aldershot', 'Stevenage', 'Berkshire', 'Hampshire', 'Bexhill-On_Sea', 'Newbury', 'Reading', 'Sandhurst', 'Maidenhead', 'Sussex', 'Surrey', 'Dartford', 'Slough', 'Fareham', 'Guildford', 'Maidstone', 'Aylesbury', 'Wallingford', 'Chesham', 'Milton Keynes', 'Kent', 'Margate'],
-        'South West': ['South West', 'Gloucester', 'Devon', 'Bristol', 'Dorset', 'Cheltenham', 'Plymouth', 'Cornwall', 'Dorchester', 'Exeter', 'Chippenham'],
-        'Midlands': ['Midlands', 'Leicestershire', 'Birmingham','Worcestershire', 'Warwickshire', 'Derby', 'Hinckley', 'Shropshire', 'Coventry', 'Leicester', 'Warwick', 'Nottingham', 'Burton-On-Trent', 'Solihull', 'Markfield', 'Hereford'],
-        'East of England': ['East of England', 'Hertfordshire', 'Bedfordshire', 'Cambridge','East Anglia', 'Norwich', 'Bedford', 'Suffolk', 'Norfolk', 'Basildon'],
+        'North': [
+            # North West
+            'North West', 'Manchester', 'Rochdale', 'Blackburn', 'Warrington', 'Liverpool', 'Wigan', 'Stockport', 'Ormskirk', 'Salford', 'Blackburn', 'Cheshire', 'Merseyside', 'Preston',
+            # Yorkshire
+            'Yorkshire', 'North East' ,'Lancashire', 'Leeds', 'Bradford', 'Huddersfield', 'Newcastle', 'Sheffield', 'Beverly', 'Doncaster', 'Hartlepool', 'Grimsby', 'Ripon', 'Lincolnshire',
+            # Midlands
+            'Midlands', 'Leicestershire', 'Birmingham','Worcestershire', 'Warwickshire', 'Derby', 'Hinckley', 'Shropshire', 'Coventry', 'Leicester', 'Warwick', 'Nottingham', 'Burton-On-Trent', 'Solihull', 'Markfield', 'Hereford'
+        ],
+        'South': [
+            # South East
+            'South East', 'Oxford', 'Oxfordshire', 'Aldershot', 'Stevenage', 'Berkshire', 'Hampshire', 'Bexhill-On_Sea', 'Newbury', 'Reading', 'Sandhurst', 'Maidenhead', 'Sussex', 'Surrey', 'Dartford', 'Slough', 'Fareham', 'Guildford', 'Maidstone', 'Aylesbury', 'Wallingford', 'Chesham', 'Milton Keynes', 'Kent', 'Margate',
+            # South West
+            'South West', 'Gloucester', 'Devon', 'Bristol', 'Dorset', 'Cheltenham', 'Plymouth', 'Cornwall', 'Dorchester', 'Exeter', 'Chippenham',
+            # East of England
+            'East of England', 'Hertfordshire', 'Bedfordshire', 'Cambridge','East Anglia', 'Norwich', 'Bedford', 'Suffolk', 'Norfolk', 'Basildon'
+        ],
         'London': ['London', 'Croydon', 'Hounslow'],
-        'Scotland': ['Scotland', 'Glasgow', 'Edinburgh', 'Aberdeen'],
-        'Ireland': ['Ireland', 'Belfast'],
-        'Wales': ['Wales', 'Swansea', 'Cardiff', 'Bridgend'],
-        'Other': ['UK', 'Unspecified']
+        # Other, including Scotland, Wales and Ireland
+        'Other': ['UK', 'Unspecified', 'Ireland', 'Belfast', 'Scotland', 'Glasgow', 'Edinburgh', 'Aberdeen', 'Wales', 'Swansea', 'Cardiff', 'Bridgend']
     }
 
 SKILL_KEYWORDS = [
