@@ -2,6 +2,9 @@ import re
 import pandas as pd
 from sqlalchemy import create_engine, inspect
 from datetime import datetime, timedelta
+from src.config import DB_PATH, RAW_DATA_TABLE_NAME, PROCESSED_DATA_TABLE_NAME, REGION_TO_CITIES_MAP, SKILL_KEYWORDS
+from src.utils import save_data_to_db
+
 
 def load_raw_data(db_path, table_name):
     """
@@ -93,40 +96,38 @@ def parse_date(date_string):
             past_date = scrape_date - delta
         else:
             return None
-    return past_date
+    return past_date.date()
 
 def parse_salary(salary_string):
     """
-    Parse raw salary string into numerical values.
-    :param salary_string: Raw salary string.
-    :return: Yearly salary as a numerical value.
-    """
+        Parse raw salary string into numerical values.
+        :param salary_string: Raw salary string.
+        :return: Yearly salary as a numerical value.
+        """
     if not isinstance(salary_string, str):
         return 0
     salary_lower = salary_string.lower()
-    if 'competitive' in salary_lower:
+    if any(keyword in salary_lower for keyword in ['competitive', 'market rate']):
         return 0
-    salary_clean = salary_lower.replace('£', '').replace(',', '').replace('k', '000')
-    numbers = [int(n) for n in re.findall(r'\d+', salary_clean)]
-    if not numbers:
+    salary_no_commas = salary_lower.replace(',', '')
+    # This regex finds integers and decimals (e.g., '50', '42.5')
+    numbers_str = re.findall(r'(\d+\.?\d*)', salary_no_commas)
+    if not numbers_str:
         return 0
+    numbers = [float(n) for n in numbers_str]
+    # Apply 'k' multiplier if present in the original string
+    if re.search(r'\d+k', salary_lower):
+        numbers = [n * 1000 for n in numbers]
+    avg_rate = sum(numbers) / len(numbers)
     if 'hour' in salary_lower:
-        if len(numbers) > 1:
-            avg_hourly_rate = (numbers[0] + numbers[-1]) / len(numbers)
-        else:
-            avg_hourly_rate = numbers[0]
-        return int(avg_hourly_rate * 8 * 250)
-    if 'day' in salary_lower or 'daily' in salary_lower:
-        if len(numbers) >= 2:
-            avg_daily_rate = (numbers[0] + numbers[1]) / 2
-            return int(avg_daily_rate * 250)
-        else:
-            return int(numbers[0] * 250)
-    else:
-        if len(numbers) >= 2:
-            return int((numbers[0] + numbers[1]) / 2)
-        else:
-            return int(numbers[0])
+        return int(avg_rate) if avg_rate > 200 else int(avg_rate * 8 * 250)
+    if 'day' in salary_lower:
+        return int(avg_rate) if avg_rate > 2000 else int(avg_rate * 250)
+    if 100 < avg_rate < 1000:
+        return int(avg_rate * 250)
+    if avg_rate < 100:
+        int(avg_rate * 8 * 250)
+    return int(avg_rate)
 
 def extract_skills_from_description(job_description, skill_keywords):
     """
@@ -143,7 +144,14 @@ def extract_skills_from_description(job_description, skill_keywords):
             found_skills.append(skill)
     return found_skills
 
-def classify_by_seniority(title, description, salary=0):
+def classify_by_seniority(row):
+    title = row['job_title']
+    description = row['full_description']
+    salary = row['salary_numeric']
+
+    return _classify_seniority(title, description, salary)
+
+def _classify_seniority(title, description, salary=0):
     """
     Classify job seniority based on keywords in the title, description, and salary.
     :param title: Job title.
@@ -153,7 +161,7 @@ def classify_by_seniority(title, description, salary=0):
     """
     title_lower = str(title).lower()
     description_lower = str(description).lower()
-    senior_keywords = ['senior', 'sr', 'lead', 'principal', 'manager', 'head of']
+    senior_keywords = ['senior', 'sr', 'principal', 'manager', 'head of']
     junior_keywords = ['junior', 'jr', 'entry', 'graduate', 'trainee', 'intern']
     if any(keyword in title_lower for keyword in senior_keywords):
         return 'Senior'
@@ -177,4 +185,21 @@ def classify_by_seniority(title, description, salary=0):
     return 'Mid-Level'
 
 if __name__ == '__main__':
-    print(parse_salary("£50 per hour"))
+    df = load_raw_data(DB_PATH, RAW_DATA_TABLE_NAME)
+    df['salary_numeric'] = df['salary_raw'].apply(parse_salary_2)
+    df['seniority'] = df.apply(classify_by_seniority, axis=1)
+    df['city'] = df['location'].apply(classify_location_by_city)
+    df['region'] = df['location'].apply(lambda x: classify_location_by_region(x, REGION_TO_CITIES_MAP))
+    df['employment_type_clean'] = df['employment_type'].apply(categorize_employment_type)
+    df['date_posted'] = df['date_posted_raw'].apply(parse_date)
+    df['skills'] = df['full_description'].apply(lambda x: extract_skills_from_description(x, SKILL_KEYWORDS))
+    df['skills'] = df['skills'].apply(lambda x: ','.join(x) if isinstance(x, list) else '')
+    columns_to_keep = [
+        'search_category', 'company_name', 'seniority', 'salary_numeric', 'employment_type_clean',
+        'city', 'region', 'date_posted','skills'
+    ]
+    final_columns = [col for col in columns_to_keep if col in df.columns]
+    final_df = df[final_columns]
+    save_data_to_db(final_df, PROCESSED_DATA_TABLE_NAME, DB_PATH)
+
+
