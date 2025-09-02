@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, inspect
 
 import pandas as pd
 
@@ -27,6 +27,21 @@ def save_data_to_db(data, table_name, db_path, search_category=None):
         print(f"Successfully wrote {len(df)} records to the '{table_name}' table in {db_path}.")
     except Exception as e:
         print(f"An error occurred while saving to the database: {e}")
+
+def load_data_from_db(db_path, table_name):
+    """
+    Load the specified data from the database into a DataFrame.
+    :param db_path: Path to the SQLite database.
+    :param table_name: Name of the table to load.
+    :return: A DataFrame containing the raw data, or an empty one on error.
+    """
+    engine = create_engine(f'sqlite:///{db_path}')
+    inspector = inspect(engine)
+    if not inspector.has_table(table_name):
+        return pd.DataFrame()
+    df = pd.read_sql_table(table_name, engine)
+    print(f"Successfully loaded {len(df)} rows.")
+    return df
 
 def deduplicate_table(table_name, db_path):
     """

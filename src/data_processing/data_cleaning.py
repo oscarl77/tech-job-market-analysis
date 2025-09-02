@@ -1,25 +1,8 @@
 import re
-import pandas as pd
-from sqlalchemy import create_engine, inspect
 from datetime import datetime, timedelta
 from src.config import DB_PATH, RAW_DATA_TABLE_NAME, PROCESSED_DATA_TABLE_NAME, REGION_TO_CITIES_MAP, SKILL_KEYWORDS
-from src.utils import save_data_to_db
+from src.utils import save_data_to_db, load_data_from_db
 
-
-def load_raw_data(db_path, table_name):
-    """
-    Load the raw data from the database into a DataFrame.
-    :param db_path: Path to the SQLite database.
-    :param table_name: Name of the table to load.
-    :return: A DataFrame containing the raw data, or an empty one on error.
-    """
-    engine = create_engine(f'sqlite:///{db_path}')
-    inspector = inspect(engine)
-    if not inspector.has_table(table_name):
-        return pd.DataFrame()
-    df = pd.read_sql_table(table_name, engine)
-    print(f"Successfully loaded {len(df)} rows.")
-    return df
 
 def classify_location_by_city(location_string):
     """
@@ -161,7 +144,7 @@ def _classify_seniority(title, description, salary=0):
     """
     title_lower = str(title).lower()
     description_lower = str(description).lower()
-    senior_keywords = ['senior', 'sr', 'principal', 'manager', 'head of']
+    senior_keywords = ['senior', 'sr', 'manager', 'head of']
     junior_keywords = ['junior', 'jr', 'entry', 'graduate', 'trainee', 'intern']
     if any(keyword in title_lower for keyword in senior_keywords):
         return 'Senior'
@@ -185,8 +168,8 @@ def _classify_seniority(title, description, salary=0):
     return 'Mid-Level'
 
 if __name__ == '__main__':
-    df = load_raw_data(DB_PATH, RAW_DATA_TABLE_NAME)
-    df['salary_numeric'] = df['salary_raw'].apply(parse_salary_2)
+    df = load_data_from_db(DB_PATH, RAW_DATA_TABLE_NAME)
+    df['salary_numeric'] = df['salary_raw'].apply(parse_salary)
     df['seniority'] = df.apply(classify_by_seniority, axis=1)
     df['city'] = df['location'].apply(classify_location_by_city)
     df['region'] = df['location'].apply(lambda x: classify_location_by_region(x, REGION_TO_CITIES_MAP))
@@ -195,7 +178,7 @@ if __name__ == '__main__':
     df['skills'] = df['full_description'].apply(lambda x: extract_skills_from_description(x, SKILL_KEYWORDS))
     df['skills'] = df['skills'].apply(lambda x: ','.join(x) if isinstance(x, list) else '')
     columns_to_keep = [
-        'search_category', 'company_name', 'seniority', 'salary_numeric', 'employment_type_clean',
+        'search_category', 'job_title', 'company_name', 'seniority', 'salary_numeric', 'employment_type_clean',
         'city', 'region', 'date_posted','skills'
     ]
     final_columns = [col for col in columns_to_keep if col in df.columns]
