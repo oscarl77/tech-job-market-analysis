@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 
 import pandas as pd
 
-def save_data_to_db(data, table_name, db_path, search_category):
+def save_data_to_db(data, table_name, db_path, search_category=None):
     """
     Save the data to a specified table in an SQLite database.
     :param data: Raw data that is to be saved.
@@ -14,7 +14,8 @@ def save_data_to_db(data, table_name, db_path, search_category):
     if df.empty:
         print("DataFrame is empty. Nothing to save.")
         return
-    df['search_category'] = search_category
+    if search_category is not None:
+        df['search_category'] = search_category
     try:
         engine = create_engine(f'sqlite:///{db_path}')
         df.to_sql(
