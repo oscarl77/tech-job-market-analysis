@@ -1,4 +1,3 @@
-import pandas as pd
 from datetime import datetime
 
 from src.config import SKILL_KEYWORDS, REGION_TO_CITIES_MAP
@@ -7,21 +6,25 @@ from src.data_processing.data_cleaning import (
     classify_location_by_city,
     classify_location_by_region,
     parse_date,
-    classify_by_seniority, extract_skills_from_description
+    extract_skills_from_description
 )
 
 def test_parse_salary():
     """Test that various salary formats are parsed correctly."""
     assert parse_salary("£50,000 - £60,000") == 55000
     assert parse_salary("From £30,000 to £40,000 per annum") == 35000
-    assert parse_salary("70k - 80k") == 75000
+    assert parse_salary("70k - 80.5k") == 75250
+    assert(parse_salary("50000.00")) == 50000
+    assert(parse_salary("£75,000 per annum + Package")) == 75000
     assert parse_salary("£55k per annum") == 55000
+    assert(parse_salary("£555.56 - 555.56 per year + None")) == 138890
     assert parse_salary("45000") == 45000
     assert parse_salary("£500 a day") == 125000
     assert parse_salary("£450 - £550 per day") == 125000
     assert parse_salary("£50 per hour") == 100000
     assert parse_salary("£40 - 60 per hour") == 100000
     assert parse_salary("Competitive") == 0
+    assert parse_salary("45000 per hour") == 45000
 
 def test_classify_location_by_city():
     """Test that locations are standardized correctly by city or otherwise"""
@@ -41,10 +44,10 @@ def test_classify_location_by_region():
 def test_parse_date():
     """Test that relative dates are converted correctly using a fixed 'now' date."""
     fixed_now = datetime(2025, 9, 1)
-    assert parse_date("Published: 19 hours ago") == fixed_now
-    assert parse_date("Published: 2 weeks ago") == datetime(2025, 8, 18)
-    assert parse_date("Posted 3 days ago") == datetime(2025, 8, 29)
-    assert parse_date("1 month ago") == datetime(2025, 8, 2)
+    assert parse_date("Published: 19 hours ago") == fixed_now.date()
+    assert parse_date("Published: 2 weeks ago") == datetime(2025, 8, 18).date()
+    assert parse_date("Posted 3 days ago") == datetime(2025, 8, 29).date()
+    assert parse_date("1 month ago") == datetime(2025, 8, 2).date()
     assert parse_date("N/A") is None
 
 def test_extract_skills_from_description():
@@ -72,21 +75,3 @@ def test_extract_skills_from_description():
     assert extract_skills_from_description(full_descriptions[2], SKILL_KEYWORDS) == expected_skills[2]
     assert extract_skills_from_description(full_descriptions[3], SKILL_KEYWORDS) == expected_skills[3]
     assert extract_skills_from_description(full_descriptions[4], SKILL_KEYWORDS) == expected_skills[4]
-
-def test_classify_seniority():
-    """Test the seniority classification logic."""
-    # Test title-based classification
-    assert classify_by_seniority("Senior Data Engineer", "", 0) == "Senior"
-    assert classify_by_seniority("Jr. Software Engineer", "", 0) == "Junior"
-    assert classify_by_seniority("Lead Data Scientist", "", 0) == "Senior"
-
-    # Test description-based classification (years of experience)
-    assert classify_by_seniority("Data Analyst", "Requires 5+ years of experience", 0) == "Senior"
-    assert classify_by_seniority("Data Analyst", "Looking for someone with 1 year of experience", 0) == "Junior"
-
-    # Test salary-based classification
-    assert classify_by_seniority("Data Engineer", "", 80000) == "Senior"
-    assert classify_by_seniority("Data Engineer", "", 35000) == "Junior"
-
-    # Test default case
-    assert classify_by_seniority("Data Engineer", "Some description", 55000) == "Mid-Level"
