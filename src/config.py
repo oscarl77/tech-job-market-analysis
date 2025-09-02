@@ -1,3 +1,4 @@
+from pathlib import Path
 
 BASE_URL = "https://www.cwjobs.co.uk/jobs/"
 JOB_POST_BASE_URL = "https://www.cwjobs.co.uk"
@@ -6,8 +7,12 @@ ARTICLE_CLASS = "a.res-30nsen"
 JOB_TITLE = "DevOps Engineer"
 PAGES_TO_SCRAPE = 11
 
-DB_PATH = 'jobs.db'
+current_file_path = Path(__file__).resolve()
+BASE_DIR = current_file_path.parent.parent
+DB_PATH = BASE_DIR / 'jobs.db'
+
 RAW_DATA_TABLE_NAME = 'jobs_raw'
+PROCESSED_DATA_TABLE_NAME = 'jobs_processed'
 
 REGION_TO_CITIES_MAP = {
         'North West': ['North West', 'Manchester', 'Rochdale', 'Blackburn', 'Warrington', 'Liverpool', 'Wigan', 'Stockport', 'Ormskirk', 'Salford', 'Blackburn', 'Cheshire', 'Merseyside', 'Preston'],
